@@ -14,6 +14,13 @@ jobs:
       # Start to build
       - name: build apk
         run: cargo quad-apk build --release
+      - name: Generate Env Variables
+        run: |
+          echo "PACKAGE_NAME=$(cat Cargo.toml | grep -e '^package_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo "VERSION=$(cat Cargo.toml | grep -e '^version= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo "APP_NAME=$(cat Cargo.toml | grep -e '^name= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo "VERSION_NAME=$(cat Cargo.toml | grep -e '^version_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
       - name: Upload to artifacks
         uses: softprops/action-gh-release@v1
         with:
