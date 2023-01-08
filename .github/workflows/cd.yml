@@ -1,0 +1,71 @@
+name: Build and deploy
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    container: notfl3/cargo-apk:latest
+    steps:
+      - uses: actions/checkout@v3
+      # Start to build
+      - name: build apk
+        run: cargo quad-apk build --release
+      - name: Upload to artifacks
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/android-artifacts/release/apk/flappy_ferris.apk
+
+  build-pc:
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version: [stable]
+        platform:
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, ext: ".exe", setup_ext: ".bat" }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest, ext: "", setup_ext: ".sh" }
+          - { target: x86_64-apple-darwin, os: macos-latest, ext: "", setup_ext: ".sh" }
+
+    runs-on: ${{ matrix.platform.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.platform.target }}
+
+      - name: Get current date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Cache cargo registry
+        uses: actions/cache@v2.1.4
+        with:
+          path: ~/.cargo/registry
+          # Add date to the cache to keep it up to date
+          key: ${{ matrix.platform }}-stable-cargo-registry-${{ hashFiles('Cargo.toml') }}-${{ env.CURRENT_DATE }}
+          # Restore from outdated cache for speed
+          restore-keys: |
+            ${{ matrix.platform }}-stable-cargo-registry-${{ hashFiles('Cargo.toml') }}
+            ${{ matrix.platform }}-stable-cargo-registry-
+      - name: Cache cargo index
+        uses: actions/cache@v2.1.4
+        with:
+          path: ~/.cargo/git
+          # Add date to the cache to keep it up to date
+          key: ${{ matrix.platform }}-stable-cargo-index-${{ hashFiles('Cargo.toml') }}-${{ env.CURRENT_DATE }}
+          # Restore from outdated cache for speed
+          restore-keys: |
+            ${{ matrix.platform }}-stable-cargo-index-${{ hashFiles('Cargo.toml') }}
+            ${{ matrix.platform }}-stable-cargo-index-
+      - name: build release
+        run: cargo build --release--target ${{ matrix.platform.target }}
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/${{ matrix.platform.target }}/release/flappy_ferris${{ matrix.platform.ext }}
