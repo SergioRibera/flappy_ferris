@@ -22,10 +22,10 @@ jobs:
           VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code = ' | cut -d' ' -f3 | sed 's/\"//g')
       - id: env
         run: |
-          echo "$PACKAGE_NAME" >> $GITHUB_OUTPUT
-          echo "$VERSION" >> $GITHUB_OUTPUT
-          echo "$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
 
   build-android:
     runs-on: ubuntu-latest
