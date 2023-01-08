@@ -119,6 +119,11 @@ jobs:
       - name: Rename build
         run: |
           cp target/${{ matrix.platform.target }}/release/${{ env.APP_NAME }}${{ matrix.platform.ext }} ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{ env.APP_NAME }}_${{ matrix.platform.target }}
+          path: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
