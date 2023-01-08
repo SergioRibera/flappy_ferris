@@ -40,7 +40,7 @@ jobs:
         run: cargo quad-apk build --release --nosign
       - name: Sign APK
         run: |
-          echo {{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk
+          echo ${{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk
       - name: Rename APK
         run: |
           cp target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
