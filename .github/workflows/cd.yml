@@ -22,6 +22,7 @@ jobs:
           echo "VERSION_NAME=$(cat Cargo.toml | grep -e '^version_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "{{ secrets.KEYSTORE }}"
+      - run: |
           echo "{{ secrets.KEYSTORE }}" | base64 --decode > ${{ env.APP_NAME }}.keystore
       # Start to build
       - name: build apk
@@ -56,17 +57,14 @@ jobs:
         platform:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            deployVar: windows
             ext: ".exe"
             setup_ext: ".bat"
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            deployVar: linux
             ext: ""
             setup_ext: ".sh"
           - target: x86_64-apple-darwin
             os: macos-latest
-            deployVar: osx
             ext: ""
             setup_ext: ".sh"
 
@@ -113,6 +111,31 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
+
+  upload-itchio:
+    needs: build-pc
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version: [stable]
+        platform:
+          - deployVar: windows
+            target: x86_64-pc-windows-msvc
+            ext: ".exe"
+          - deployVar: linux
+            target: x86_64-unknown-linux-gnu
+            ext: ""
+          - deployVar: osx
+            target: x86_64-apple-darwin
+            ext: ""
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacs
+        uses: actions/download-artifact@master
+        with:
+          path: ./
       - name: Upload to Itch.io
         uses: josephbmanley/butler-publish-itchio-action@master
         env:
@@ -120,4 +143,5 @@ jobs:
           CHANNEL: ${{ matrix.deployVar }}
           ITCH_GAME: ${{ env.ITCH_GAME_NAME }}
           ITCH_USER: sergioribera
+          VERSION: ${{ env.VERSION_NAME }}
           PACKAGE: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
