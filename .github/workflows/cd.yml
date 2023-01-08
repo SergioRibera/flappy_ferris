@@ -8,7 +8,7 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    container: notfl3/cargo-apk:latest
+    container: sergioribera/cargo-apk:latest
     steps:
       - uses: actions/checkout@v3
       # Start to build
@@ -18,6 +18,17 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: target/android-artifacts/release/apk/flappy_ferris.apk
+      # - name: Upload to Playstore
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ SERVICE_ACCOUNT_JSON }}
+      #     packageName: com.sergioribera.flappy_ferris
+      #     releaseFiles: target/android-artifacts/release/apk/flappy_ferris.apk
+      #     track: alpha
+      #     status: inProgress
+      #     inAppUpdatePriority: 2
+      #     userFraction: 0.7
+      #     whatsNewDirectory: distribution/whatsnew
 
   build-pc:
     strategy:
@@ -65,7 +76,11 @@ jobs:
             ${{ matrix.platform }}-stable-cargo-index-
       - name: build release
         run: cargo build --release --target ${{ matrix.platform.target }}
+      - name: Rename build
+        run: |
+          cp target/${{ matrix.platform.target }}/release/flappy_ferris${{ matrix.platform.ext }} \
+          flappy_ferris_${{ matrix.platform.target }}_${{ matrix.platform.ext }}
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          files: target/${{ matrix.platform.target }}/release/flappy_ferris${{ matrix.platform.ext }}
+          files: flappy_ferris_${{ matrix.platform.target }}_${{ matrix.platform.ext }}
