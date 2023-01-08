@@ -153,7 +153,8 @@ jobs:
       - name: Download artifacs
         uses: actions/download-artifact@master
         with:
-          path: ./
+          name: ${{ env.APP_NAME }}_${{ matrix.platform.target }}
+          path: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
       - name: Upload to Itch.io
         uses: josephbmanley/butler-publish-itchio-action@master
         env:
