@@ -78,8 +78,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.platform.target }}
       - name: Rename build
         run: |
-          cp target/${{ matrix.platform.target }}/release/flappy_ferris${{ matrix.platform.ext }} \
-          flappy_ferris_${{ matrix.platform.target }}_${{ matrix.platform.ext }}
+          cp target/${{ matrix.platform.target }}/release/flappy_ferris${{ matrix.platform.ext }} flappy_ferris_${{ matrix.platform.target }}${{ matrix.platform.ext }}
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
