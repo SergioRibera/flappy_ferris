@@ -82,4 +82,4 @@ jobs:
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          files: flappy_ferris_${{ matrix.platform.target }}_${{ matrix.platform.ext }}
+          files: flappy_ferris_${{ matrix.platform.target }}${{ matrix.platform.ext }}
