@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: |
-          echo "{{ secrets.KEYSTORE }}" | base64 --decode > ${{ env.APP_NAME }}.keystore
+          echo ${{ secrets.KEYSTORE }} | base64 --decode > ${{ env.APP_NAME }}.keystore
       # Start to build
       - name: build apk
         run: cargo quad-apk build --release --nosign
