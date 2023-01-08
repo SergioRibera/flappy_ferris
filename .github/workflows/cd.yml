@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v3
       # Start to build
       - name: build apk
-        run: cargo quad-apk build --release
+        run: cargo quad-apk build --release --nosign
       - name: Generate Env Variables
         run: |
           echo "PACKAGE_NAME=$(cat Cargo.toml | grep -e '^package_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
@@ -21,21 +21,28 @@ jobs:
           echo "APP_NAME=$(cat Cargo.toml | grep -e '^name= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_NAME=$(cat Cargo.toml | grep -e '^version_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo {{ secrets.KEYSTORE }} > flappy_ferris.keystore
+      - name: Sign APK
+        run: |
+          echo {{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks flappy_ferris.keystore --ks-key-alias flappy_ferris target/android-artifacts/release/apk/flappy_ferris.apk
+      - name: Rename APK
+        run: |
+          cp target/android-artifacts/release/apk/flappy_ferris.apk flappy_ferris${{ env.VERSION }}.apk
       - name: Upload to artifacks
         uses: softprops/action-gh-release@v1
         with:
-          files: target/android-artifacts/release/apk/flappy_ferris.apk
-      # - name: Upload to Playstore
-      #   uses: r0adkll/upload-google-play@v1
-      #   with:
-      #     serviceAccountJsonPlainText: ${{ SERVICE_ACCOUNT_JSON }}
-      #     packageName: com.sergioribera.flappy_ferris
-      #     releaseFiles: target/android-artifacts/release/apk/flappy_ferris.apk
-      #     track: alpha
-      #     status: inProgress
-      #     inAppUpdatePriority: 2
-      #     userFraction: 0.7
-      #     whatsNewDirectory: distribution/whatsnew
+          files: flappy_ferris${{ env.VERSION }}.apk
+      - name: Upload to Playstore
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.sergioribera.flappy_ferris
+          releaseFiles: flappy_ferris${{ env.VERSION }}.apk
+          track: alpha
+          status: inProgress
+          inAppUpdatePriority: 2
+          userFraction: 0.7
+          whatsNewDirectory: distribution/whatsnew
 
   build-pc:
     strategy:
