@@ -1,5 +1,9 @@
 name: Build and deploy
 
+env:
+  APP_NAME: flappy_ferris
+  ITCH_GAME_NAME: flappy-ferris
+
 on:
   push:
     tags:
@@ -14,30 +18,30 @@ jobs:
       - name: Generate Env Variables
         run: |
           echo "PACKAGE_NAME=$(cat Cargo.toml | grep -e '^package_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-          echo "VERSION=$(cat Cargo.toml | grep -e '^version= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-          echo "APP_NAME=$(cat Cargo.toml | grep -e '^name= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo "VERSION=$(cat Cargo.toml | grep -e '^version = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_NAME=$(cat Cargo.toml | grep -e '^version_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-          echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-          echo {{ secrets.KEYSTORE }} | base64 --decode > flappy_ferris.keystore
+          echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
+          echo "{{ secrets.KEYSTORE }}"
+          echo "{{ secrets.KEYSTORE }}" | base64 --decode > ${{ env.APP_NAME }}.keystore
       # Start to build
       - name: build apk
         run: cargo quad-apk build --release --nosign
       - name: Sign APK
         run: |
-          echo {{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks flappy_ferris.keystore --ks-key-alias flappy_ferris target/android-artifacts/release/apk/flappy_ferris.apk
+          echo {{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk
       - name: Rename APK
         run: |
-          cp target/android-artifacts/release/apk/flappy_ferris.apk flappy_ferris${{ env.VERSION }}.apk
+          cp target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk ${{ env.APP_NAME }}${{ env.VERSION }}.apk
       - name: Upload to artifacks
         uses: softprops/action-gh-release@v1
         with:
-          files: flappy_ferris${{ env.VERSION }}.apk
+          files: ${{ env.APP_NAME }}${{ env.VERSION }}.apk
       - name: Upload to Playstore
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: com.sergioribera.flappy_ferris
-          releaseFiles: flappy_ferris${{ env.VERSION }}.apk
+          packageName: com.sergioribera.${{ env.APP_NAME }}
+          releaseFiles: ${{ env.APP_NAME }}${{ env.VERSION }}.apk
           track: alpha
           status: inProgress
           inAppUpdatePriority: 2
@@ -50,9 +54,21 @@ jobs:
       matrix:
         rust_version: [stable]
         platform:
-          - { target: x86_64-pc-windows-msvc, os: windows-latest, ext: ".exe", setup_ext: ".bat" }
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest, ext: "", setup_ext: ".sh" }
-          - { target: x86_64-apple-darwin, os: macos-latest, ext: "", setup_ext: ".sh" }
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            deployVar: windows
+            ext: ".exe"
+            setup_ext: ".bat"
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            deployVar: linux
+            ext: ""
+            setup_ext: ".sh"
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            deployVar: osx
+            ext: ""
+            setup_ext: ".sh"
 
     runs-on: ${{ matrix.platform.os }}
 
@@ -92,8 +108,16 @@ jobs:
         run: cargo build --release --target ${{ matrix.platform.target }}
       - name: Rename build
         run: |
-          cp target/${{ matrix.platform.target }}/release/flappy_ferris${{ matrix.platform.ext }} flappy_ferris_${{ matrix.platform.target }}${{ matrix.platform.ext }}
+          cp target/${{ matrix.platform.target }}/release/${{ env.APP_NAME }}${{ matrix.platform.ext }} ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          files: flappy_ferris_${{ matrix.platform.target }}${{ matrix.platform.ext }}
+          files: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
+      - name: Upload to Itch.io
+        uses: josephbmanley/butler-publish-itchio-action@master
+        env:
+          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+          CHANNEL: ${{ matrix.deployVar }}
+          ITCH_GAME: ${{ env.ITCH_GAME_NAME }}
+          ITCH_USER: sergioribera
+          PACKAGE: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
