@@ -11,9 +11,6 @@ jobs:
     container: sergioribera/cargo-apk:latest
     steps:
       - uses: actions/checkout@v3
-      # Start to build
-      - name: build apk
-        run: cargo quad-apk build --release --nosign
       - name: Generate Env Variables
         run: |
           echo "PACKAGE_NAME=$(cat Cargo.toml | grep -e '^package_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
@@ -21,7 +18,10 @@ jobs:
           echo "APP_NAME=$(cat Cargo.toml | grep -e '^name= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_NAME=$(cat Cargo.toml | grep -e '^version_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code= ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-          echo -n {{ secrets.KEYSTORE }} | base64 --decode > flappy_ferris.keystore
+          echo {{ secrets.KEYSTORE }} | base64 --decode > flappy_ferris.keystore
+      # Start to build
+      - name: build apk
+        run: cargo quad-apk build --release --nosign
       - name: Sign APK
         run: |
           echo {{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks flappy_ferris.keystore --ks-key-alias flappy_ferris target/android-artifacts/release/apk/flappy_ferris.apk
