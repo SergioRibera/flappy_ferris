@@ -10,9 +10,8 @@ on:
       - "v*.*.*"
 
 jobs:
-  build-android:
+  prepare-env:
     runs-on: ubuntu-latest
-    container: sergioribera/cargo-apk:latest
     steps:
       - uses: actions/checkout@v3
       - name: Generate Env Variables
@@ -21,7 +20,15 @@ jobs:
           echo "VERSION=$(cat Cargo.toml | grep -e '^version = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_NAME=$(cat Cargo.toml | grep -e '^version_name = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
           echo "VERSION_CODE=$(cat Cargo.toml | grep -e '^version_code = ' | cut -d' ' -f3 | sed 's/\"//g')" >> $GITHUB_ENV
-          echo "{{ secrets.KEYSTORE }}"
+      - id: env
+        run: echo $GITHUB_ENV >> $GITHUB_OUTPUT
+
+  build-android:
+    runs-on: ubuntu-latest
+    container: sergioribera/cargo-apk:latest
+    needs: prepare-env
+    steps:
+      - uses: actions/checkout@v3
       - run: |
           echo "{{ secrets.KEYSTORE }}" | base64 --decode > ${{ env.APP_NAME }}.keystore
       # Start to build
@@ -32,17 +39,17 @@ jobs:
           echo {{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk
       - name: Rename APK
         run: |
-          cp target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk ${{ env.APP_NAME }}${{ env.VERSION }}.apk
+          cp target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
       - name: Upload to artifacks
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ env.APP_NAME }}${{ env.VERSION }}.apk
+          files: ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
       - name: Upload to Playstore
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: com.sergioribera.${{ env.APP_NAME }}
-          releaseFiles: ${{ env.APP_NAME }}${{ env.VERSION }}.apk
+          releaseFiles: ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
           track: alpha
           status: inProgress
           inAppUpdatePriority: 2
@@ -113,11 +120,12 @@ jobs:
           files: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
 
   upload-itchio:
-    needs: build-pc
+    needs:
+      - prepare-env
+      - build-pci
     strategy:
       fail-fast: false
       matrix:
-        rust_version: [stable]
         platform:
           - deployVar: windows
             target: x86_64-pc-windows-msvc
@@ -140,8 +148,8 @@ jobs:
         uses: josephbmanley/butler-publish-itchio-action@master
         env:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: ${{ matrix.deployVar }}
+          CHANNEL: ${{ matrix.platform.deployVar }}
           ITCH_GAME: ${{ env.ITCH_GAME_NAME }}
           ITCH_USER: sergioribera
-          VERSION: ${{ env.VERSION_NAME }}
+          VERSION: ${{ steps.env.outputs.VERSION_NAME }}
           PACKAGE: ${{ env.APP_NAME }}_${{ matrix.platform.target }}${{ matrix.platform.ext }}
