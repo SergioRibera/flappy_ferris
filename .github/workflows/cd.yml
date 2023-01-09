@@ -37,6 +37,7 @@ jobs:
           echo ${{ secrets.KEYSTORE }} | base64 --decode > ${{ env.APP_NAME }}.keystore
       - name: install targets
         run: |
+          rustup default stable
           rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
           crossbundle install --preferred
       # Start to build
