@@ -11,9 +11,8 @@ $AAPT_PATH/aapt2 convert $APK_INPUT --output-format proto -o $TEMP/app_proto.apk
 
 cd $TEMP
 
-# install bundletool
+# install zip
 apt-get install -y zip
-wget -O bundletool.jar https://github.com/google/bundletool/releases/download/1.13.2/bundletool-all-1.13.2.jar
 
 unzip app_proto.apk
 mkdir manifest
@@ -26,4 +25,6 @@ zip -r base.zip *
 
 cd -
 
+# install bundletool
+wget -O bundletool.jar https://github.com/google/bundletool/releases/download/1.13.2/bundletool-all-1.13.2.jar
 java -jar bundletool.jar build-bundle --modules=$TEMP/base.zip --output=$OUTPUT
