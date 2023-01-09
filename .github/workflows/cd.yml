@@ -29,21 +29,25 @@ jobs:
 
   build-android:
     runs-on: ubuntu-latest
-    container: sergioribera/cargo-apk:latest
+    container: ghcr.io/dodorare/crossbundle:latest
     needs: prepare-env
     steps:
       - uses: actions/checkout@v3
       - run: |
           echo ${{ secrets.KEYSTORE }} | base64 --decode > ${{ env.APP_NAME }}.keystore
+      - name: install targets
+        run: |
+          rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+          crossbundle install --preferred
       # Start to build
       - name: build apk
-        run: cargo quad-apk build --release --nosign
-      - name: Sign APK
         run: |
-          echo ${{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk
+          build android --release -s=native-apk
+          build android --release -s=native-aab
       - name: Rename APK
         run: |
-          cp target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
+          cp target/android/${{ env.APP_NAME }}/gradle/build/outputs/apk/release/gradle-release-unsigned.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
+          cp target/android/${{ env.APP_NAME }}/gradle/build/outputs/apk/release/gradle-release-unsigned.aab ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
       - name: Upload to artifacks
         uses: softprops/action-gh-release@v1
         with:
@@ -53,7 +57,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: com.sergioribera.${{ env.APP_NAME }}
-          releaseFiles: ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
+          releaseFiles: ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
           track: alpha
           status: inProgress
           inAppUpdatePriority: 2
