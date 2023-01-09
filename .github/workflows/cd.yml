@@ -43,12 +43,12 @@ jobs:
           cp target/android-artifacts/release/apk/${{ env.APP_NAME }}.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
       - name: build aab
         run: |
-          chmod +x ./.github/scripts/apk2aab.sh
-          ./.github/scripts/apk2aab.sh /opt/android-sdk-linux/build-tools/31.0.0 ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
+          chmod +x ./scripts/apk2aab.sh
+          ./scripts/apk2aab.sh /opt/android-sdk-linux/build-tools/31.0.0 ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
       - name: Sign Bundles
         run: |
           echo ${{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.apk
-          echo ${{ secrets.KEYSTORE_PASSWORD }} | apksigner sign --ks ${{ env.APP_NAME }}.keystore --ks-key-alias ${{ env.APP_NAME }} ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
+          echo ${{ secrets.KEYSTORE_PASSWORD }} | jarsigner -keystore ${{ env.APP_NAME }}.keystore ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab ${{ env.APP_NAME }}
       - name: Upload to artifacks
         uses: softprops/action-gh-release@v1
         with:
