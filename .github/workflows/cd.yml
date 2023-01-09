@@ -59,7 +59,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: com.sergioribera.${{ env.APP_NAME }}
           releaseFiles: ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
-          track: alpha
+          track: production
           status: inProgress
           inAppUpdatePriority: 2
           userFraction: 0.7
