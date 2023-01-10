@@ -60,7 +60,6 @@ jobs:
           packageName: com.sergioribera.${{ env.APP_NAME }}
           releaseFiles: ${{ env.APP_NAME }}${{ steps.env.outputs.VERSION }}.aab
           track: production
-          status: draft
           inAppUpdatePriority: 2
           userFraction: 0.7
           whatsNewDirectory: distribution/whatsnew
